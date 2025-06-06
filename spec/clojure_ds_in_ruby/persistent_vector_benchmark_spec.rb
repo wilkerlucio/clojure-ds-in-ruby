@@ -4,6 +4,7 @@ require "spec_helper"
 require "benchmark"
 
 RSpec.describe ClojureDsInRuby::PersistentVector, :benchmark do
+  PersistentVector = ClojureDsInRuby::PersistentVector
   let(:small_size) { 100 }
   let(:medium_size) { 1_000 }
   let(:large_size) { 10_000 }
@@ -18,7 +19,7 @@ RSpec.describe ClojureDsInRuby::PersistentVector, :benchmark do
       end
 
       vector_time = Benchmark.realtime do
-        vector = described_class.empty
+        vector = PersistentVector.empty
         small_size.times { |i| vector = vector.push(i) }
       end
 
@@ -33,7 +34,7 @@ RSpec.describe ClojureDsInRuby::PersistentVector, :benchmark do
 
       # Build test data
       array = (0...medium_size).to_a
-      vector = array.reduce(described_class.empty) { |v, i| v.push(i) }
+      vector = array.reduce(PersistentVector.empty) { |v, i| v.push(i) }
       indices = Array.new(100) { rand(medium_size) }
 
       array_time = Benchmark.realtime do
@@ -53,7 +54,7 @@ RSpec.describe ClojureDsInRuby::PersistentVector, :benchmark do
     it "benchmarks structural sharing" do
       puts "\n=== Structural Sharing Performance ==="
 
-      base_vector = (0...medium_size).reduce(described_class.empty) { |v, i| v.push(i) }
+      base_vector = (0...medium_size).reduce(PersistentVector.empty) { |v, i| v.push(i) }
 
       sharing_time = Benchmark.realtime do
         10.times do |i|
@@ -78,7 +79,7 @@ RSpec.describe ClojureDsInRuby::PersistentVector, :benchmark do
       puts "\n=== Update Performance ==="
 
       array = (0...small_size).to_a
-      vector = array.reduce(described_class.empty) { |v, i| v.push(i) }
+      vector = array.reduce(PersistentVector.empty) { |v, i| v.push(i) }
 
       array_time = Benchmark.realtime do
         10.times do |i|
@@ -103,7 +104,7 @@ RSpec.describe ClojureDsInRuby::PersistentVector, :benchmark do
       puts "\n=== Memory Efficiency Demo ==="
 
       # Create base vector
-      base = (0...1000).reduce(described_class.empty) { |v, i| v.push(i) }
+      base = (0...1000).reduce(PersistentVector.empty) { |v, i| v.push(i) }
 
       # Create many derived vectors
       derived_vectors = []
