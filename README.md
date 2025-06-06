@@ -2,7 +2,7 @@
 
 ## ⚠️ Experimental Project
 
-This is **not an actual library** intended for production use. This project was created by [Wilker](https://github.com/wilkerlucio) and [João Lanjoni](https://github.com/jlanjoni) as an experiment to test AI's ability to implement complex data structures.
+This is **not an actual library** intended for production use. This project was created by [Wilker](https://github.com/wilkerlucio) and [João Lanjoni](https://github.com/lanjoni) as an experiment to test AI's ability to implement complex data structures.
 
 ## What is this?
 
