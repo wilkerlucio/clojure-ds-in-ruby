@@ -260,4 +260,77 @@ RSpec.describe ClojureDsInRuby::PersistentVector do
       expect(empty.pop).to eq(empty)
     end
   end
+
+  describe "hashing" do
+    it "provides consistent hash values" do
+      vector = PersistentVector[1, 2, 3]
+      hash1 = vector.hash
+      hash2 = vector.hash
+      expect(hash1).to eq(hash2)
+    end
+
+    it "caches hash values for performance" do
+      vector = PersistentVector[1, 2, 3]
+      
+      # First call computes and caches
+      hash1 = vector.hash
+      cached_hash = vector.instance_variable_get(:@_hash)
+      expect(hash1).to eq(cached_hash)
+      
+      # Second call returns cached value
+      hash2 = vector.hash
+      expect(hash1).to eq(hash2)
+    end
+
+    it "equal vectors have equal hashes" do
+      v1 = PersistentVector[1, 2, 3]
+      v2 = PersistentVector[1, 2, 3]
+      
+      expect(v1).to eq(v2)
+      expect(v1.hash).to eq(v2.hash)
+    end
+
+    it "provides hash integration with Ruby collections" do
+      require 'set'
+      
+      v1 = PersistentVector[1, 2, 3]
+      v2 = PersistentVector[1, 2, 3]
+      v3 = PersistentVector[1, 2, 4]
+      
+      set = Set.new([v1, v2, v3])
+      expect(set.size).to eq(2)  # v1 and v2 are equal
+      
+      hash_table = { v1 => "value1", v2 => "value2" }
+      expect(hash_table.size).to eq(1)  # v2 overwrites v1
+      expect(hash_table[v1]).to eq("value2")
+    end
+
+    it "supports eql? for strict equality" do
+      v1 = PersistentVector[1, 2, 3]
+      v2 = PersistentVector[1, 2, 3]
+      v3 = PersistentVector[1, 2, 4]
+      
+      expect(v1.eql?(v2)).to be true
+      expect(v1.eql?(v3)).to be false
+      expect(v1.eql?([1, 2, 3])).to be false
+    end
+
+    it "handles nil and mixed type hashing" do
+      vector = PersistentVector[1, nil, "hello", :symbol]
+      expect { vector.hash }.not_to raise_error
+      expect(vector.hash).to eq(vector.hash)  # Consistent
+    end
+
+    it "optimizes equality checks with hash comparison" do
+      v1 = PersistentVector[1, 2, 3]
+      v2 = PersistentVector[4, 5, 6]
+      
+      # Force hash computation
+      v1.hash
+      v2.hash
+      
+      # Equality check should be fast due to hash comparison
+      expect(v1 == v2).to be false
+    end
+  end
 end

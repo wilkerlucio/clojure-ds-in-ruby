@@ -123,5 +123,68 @@ RSpec.describe ClojureDsInRuby::PersistentVector, :benchmark do
       puts "Created 20 derived vectors from base of 1000 elements"
       puts "Each derived vector shares structure with base"
     end
+
+    it "benchmarks hash computation and caching" do
+      puts "\n=== Hash Performance ==="
+
+      # Create test vectors
+      large_vector = (0...medium_size).reduce(PersistentVector.empty) { |v, i| v.push(i) }
+      equal_vector = (0...medium_size).reduce(PersistentVector.empty) { |v, i| v.push(i) }
+      different_vector = (1..medium_size).reduce(PersistentVector.empty) { |v, i| v.push(i) }
+
+      # Benchmark first hash computation
+      first_hash_time = Benchmark.realtime do
+        large_vector.hash
+      end
+
+      # Benchmark cached hash access
+      cached_hash_time = Benchmark.realtime do
+        100.times { large_vector.hash }
+      end
+
+      # Benchmark equality with hash optimization
+      equality_time = Benchmark.realtime do
+        100.times do
+          large_vector == equal_vector
+          large_vector == different_vector
+        end
+      end
+
+      puts "First hash computation (#{medium_size} elements): #{first_hash_time.round(6)}s"
+      puts "Cached hash access (100 calls): #{cached_hash_time.round(6)}s"
+      puts "Equality checks with hash optimization (200 comparisons): #{equality_time.round(6)}s"
+
+      # Hash should be much faster after caching
+      expect(cached_hash_time).to be < first_hash_time
+      expect(equality_time).to be < 0.1  # Should be very fast
+    end
+
+    it "benchmarks hash-based collection integration" do
+      puts "\n=== Hash Collection Integration ==="
+
+      vectors = (1..100).map do |i|
+        (0...10).reduce(PersistentVector.empty) { |v, j| v.push(i * 10 + j) }
+      end
+
+      # Benchmark Ruby Set operations
+      set_time = Benchmark.realtime do
+        require 'set'
+        set = Set.new(vectors)
+        vectors.each { |v| set.include?(v) }
+      end
+
+      # Benchmark Ruby Hash operations
+      hash_time = Benchmark.realtime do
+        hash_table = {}
+        vectors.each_with_index { |v, i| hash_table[v] = i }
+        vectors.each { |v| hash_table[v] }
+      end
+
+      puts "Set operations (100 vectors): #{set_time.round(6)}s"
+      puts "Hash table operations (100 vectors): #{hash_time.round(6)}s"
+
+      expect(set_time).to be < 0.1
+      expect(hash_time).to be < 0.1
+    end
   end
 end
