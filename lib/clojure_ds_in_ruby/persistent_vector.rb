@@ -15,6 +15,7 @@ module ClojureDsInRuby
       @shift = shift
       @root = root
       @tail = tail.frozen? ? tail : tail.dup.freeze
+      @_hash = nil # Cached hash value
     end
 
     def self.[](*elements)
@@ -105,9 +106,37 @@ module ClojureDsInRuby
       each.to_a
     end
 
-    def ==(other)
+    def hash
+      return @_hash if @_hash
+
+      # Use Clojure's hasheq algorithm for ordered collections
+      # Start with 1, then: hash = 31 * hash + element.hash for each element
+      h = 1
+      each do |element|
+        h = ((h * 31) + element.hash) & 0xFFFFFFFF # Keep as 32-bit integer
+      end
+      
+      # Apply Murmur3-like mixing for better distribution
+      @_hash = mix_collection_hash(h, @size)
+    end
+
+    def eql?(other)
+      return true if equal?(other)
       return false unless other.is_a?(PersistentVector)
       return false unless @size == other.size
+      return false unless hash == other.hash
+
+      (0...@size).all? { |i| get(i).eql?(other.get(i)) }
+    end
+
+    def ==(other)
+      return true if equal?(other)
+      return false unless other.is_a?(PersistentVector)
+      return false unless @size == other.size
+      
+      # Fast inequality check using cached hashes
+      return false if @_hash && other.instance_variable_get(:@_hash) && 
+                     @_hash != other.instance_variable_get(:@_hash)
 
       (0...@size).all? { |i| get(i) == other.get(i) }
     end
@@ -123,6 +152,21 @@ module ClojureDsInRuby
       return 0 if @size < BRANCH_FACTOR
 
       (((@size - 1) >> BITS) << BITS)
+    end
+
+    # Murmur3-like hash mixing for better distribution
+    # Based on Clojure's mix-collection-hash implementation
+    def mix_collection_hash(hash_value, count)
+      # Apply Murmur3 finalizer mixing
+      h = hash_value ^ count
+      h ^= h >> 16
+      h *= 0x85ebca6b
+      h &= 0xFFFFFFFF
+      h ^= h >> 13
+      h *= 0xc2b2ae35
+      h &= 0xFFFFFFFF
+      h ^= h >> 16
+      h
     end
 
     def get_from_trie(index)
